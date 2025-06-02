@@ -12,7 +12,6 @@ type Trigger = {
 };
 
 
-
 function App() {
   const [token, setToken] = useState("");
   const [api, setApi] = useState("");  
