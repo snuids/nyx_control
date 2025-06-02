@@ -1,5 +1,5 @@
 import { useState,useEffect } from 'react'
-import { Button,message } from 'antd'
+import { Button } from 'antd'
 import './App.css'
 
 type Trigger = {
