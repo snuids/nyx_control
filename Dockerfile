@@ -19,10 +19,10 @@ RUN npm run build
 # Use an official Nginx image to serve the built application
 FROM nginx:alpine
 
-RUN mkdir -p /usr/share/nginx/html/logs
+RUN mkdir -p /usr/share/nginx/html/controls
 
 # Copy the built files from the previous stage to the Nginx web root
-COPY --from=build /app/dist /usr/share/nginx/html/logs
+COPY --from=build /app/dist /usr/share/nginx/html/controls
 
 # Expose port 80
 EXPOSE 80
