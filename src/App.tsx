@@ -116,7 +116,8 @@ const energyDataSource = Object.entries(energyData)
         }
       );
       if (!response.ok) {
-        alert("Failed to load last enery data");
+        //alert("Failed to load last enery data");
+        return;
       }
       const data = await response.json();
       //alert(`Last energy data: ${JSON.stringify(data.data["_source"])}`);
