@@ -10,6 +10,12 @@ type Trigger = {
   value?: number;
 };
 
+type Config={
+  title: string|null;
+  subtitle: string|null 
+  triggers:Trigger[] 
+}
+
 type EnergyData = {
   [key: string]: string | number;
 };
@@ -17,36 +23,16 @@ type EnergyData = {
 function App() {
   const [token, setToken] = useState("");
   const [api, setApi] = useState("");
+  const [siteId, setSiteId] = useState("marmar1");
   const [loading, setLoading] = useState(false);
   const [energyData, setEnergyData] = useState<EnergyData>({}); 
+  const [config, setConfig] = useState<Config>({
+    title: "Loading...",
+    subtitle: "",
+    triggers: []
+  });
 
-  const triggers: Trigger[] = [
-    {
-      topic: "TOMQTT_MARMAR1_COMMAND",
-      description: "FIrst Relay On the Board",
-      name: "Main Power",
-      pin: 0,
-    },
-    {
-      topic: "TOMQTT_MARMAR1_COMMAND",
-      description: "Second Relay On the Board",
-      name: "Secondary 1",
-      pin: 1,
-    },
-    {
-      topic: "TOMQTT_MARMAR1_COMMAND",
-      description: "Third Relay On the Board",
-      name: "Secondary 2",
-      pin: 2,
-    },
-    {
-      topic: "TOMQTT_MARMAR1_COMMAND",
-      description: "Fourth Relay On the Board",
-      name: "Secondary 3",
-      pin: 3,
-    },
-    // Add more triggers as needed
-  ];
+  
 
     const energyColumns = [
     {
@@ -69,10 +55,14 @@ const energyDataSource = Object.entries(energyData)
       : key === "pin1" ? "Relay 2"
       : key === "pin2" ? "Relay 3"
       : key === "pin3" ? "Relay 4"
+      : key === "pin4" ? "Relay 5"
+      : key === "pin5" ? "Relay 6"
+      : key === "pin6" ? "Relay 7"
+      : key === "pin7" ? "Relay 8"
       : key;
 
     let displayValue = value;
-    if (key.startsWith("pin")) {
+    if (key.startsWith("pin")|| key.startsWith("di") ) {
       if (value === 1) displayValue = "On";
       else if (value === 0) displayValue = "Off";
     } else if (typeof value === "number") {
@@ -107,7 +97,7 @@ const energyDataSource = Object.entries(energyData)
     try {
       //alert(JSON.stringify(trigger));
       const response = await fetch(
-        `${api}generic/nyx_lastenergy/marmar1?token=${token}`,
+        `${api}generic/nyx_lastenergy/${siteId}?token=${token}`,
         {
           method: "GET",
           headers: {
@@ -122,6 +112,28 @@ const energyDataSource = Object.entries(energyData)
       const data = await response.json();
       //alert(`Last energy data: ${JSON.stringify(data.data["_source"])}`);
       setEnergyData(data.data["_source"]);
+      //alert(`Message sent for ${trigger.name}`);
+    } catch  {
+      //alert(`Error: ${(error as Error).message}`);
+    }
+    try {
+      //alert(JSON.stringify(trigger));
+      const response = await fetch(
+        `${api}generic/nyx_marmar_config/${siteId}?token=${token}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!response.ok) {
+        //alert("Failed to load last enery data");
+        return;
+      }
+      const data = await response.json();
+      //alert(`Last energy data: ${JSON.stringify(data.data["_source"])}`);
+      setConfig(data.data["_source"]);
       //alert(`Message sent for ${trigger.name}`);
     } catch  {
       //alert(`Error: ${(error as Error).message}`);
@@ -166,6 +178,10 @@ const energyDataSource = Object.entries(energyData)
     if (apiParam) {
       setApi(apiParam);
     }
+    const siteId = params.get("siteid");
+    if (siteId) {
+      setSiteId(siteId);
+    }
     setTimeout(() => {
       loadData()
     }, 1000);
@@ -181,8 +197,9 @@ const energyDataSource = Object.entries(energyData)
 
   return (
     <>
-      <h1>Site Brussels</h1>
-      <h2>Demo Stuff</h2>
+      <h1>{config.title}</h1>
+      <h2>{config.subtitle}</h2>
+      
       <table style={{ width: "100%", textAlign: "left" }}>
         <thead>
           <tr>
@@ -193,7 +210,7 @@ const energyDataSource = Object.entries(energyData)
           </tr>
         </thead>
         <tbody>
-          {triggers.map((trigger, idx) => (
+          {config.triggers.map((trigger, idx) => (
             <tr key={idx}>
               <td style={{ textAlign: "left" }}>{trigger.name}</td>
               <td style={{ textAlign: "left" }}>{trigger.description}</td>
