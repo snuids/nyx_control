@@ -1,5 +1,6 @@
 import { useState, useEffect,useCallback } from "react";
-import { Button,Table } from "antd";
+import { Button,Table,Progress } from "antd";
+import { green, red,orange } from '@ant-design/colors';
 import "./App.css";
 
 type Trigger = {
@@ -20,7 +21,19 @@ type EnergyData = {
   [key: string]: string | number;
 };
 
+type Di={
+  key:string,
+  value:number
+}
+
+type Relay={
+  key:string,
+  value:number
+}
+
 function App() {
+  const [dis, setDis] = useState<Di[]>([]);
+  const [relays, setRelays] = useState<Relay[]>([]);
   const [token, setToken] = useState("");
   const [api, setApi] = useState("");
   const [siteId, setSiteId] = useState("marmar1");
@@ -48,7 +61,7 @@ function App() {
   ];
 
 const energyDataSource = Object.entries(energyData)
-  .filter(([key]) => key !== "id" && key !== "type")
+  .filter(([key]) => key !== "id" && key !== "type" && key.indexOf('pin') !== 0 && key.indexOf('di') !== 0)
   .map(([key, value]) => {
     const displayKey =
       key === "pin0" ? "Relay 1"
@@ -111,6 +124,29 @@ const energyDataSource = Object.entries(energyData)
       }
       const data = await response.json();
       //alert(`Last energy data: ${JSON.stringify(data.data["_source"])}`);
+      const newdis=[]
+      for(let i=0;i<8;i++)
+      {
+        const key=`di${i}`;
+        if(data.data["_source"][key]!==undefined)
+        {
+          newdis.push({"key":`Input ${i+1}`, "value":data.data["_source"][key]});
+        }
+      }
+      setDis(newdis);
+
+      const newrelays=[]
+      for(let i=0;i<8;i++)
+      {
+        const key=`pin${i}`;
+        if(data.data["_source"][key]!==undefined)
+        {
+          newrelays.push({"key":`Relay ${i+1}`, "value":data.data["_source"][key]});
+        }
+      }
+      setRelays(newrelays);
+
+
       setEnergyData(data.data["_source"]);
       //alert(`Message sent for ${trigger.name}`);
     } catch  {
@@ -167,6 +203,64 @@ const energyDataSource = Object.entries(energyData)
       alert(`Error: ${(error as Error).message}`);
     }
   };
+
+// Create columns for Digital Inputs table
+const disColumns = dis.map((di) => ({
+  title: di.key,
+  dataIndex: di.key,
+  key: di.key,
+  align: 'center' as const,
+  render: (value: string) => (
+    <span
+      style={{
+        backgroundColor: value === "On" ? "#52c41a" : "#ff4d4f",
+        color: "white",
+        padding: "4px 8px",
+        borderRadius: "4px",
+        fontWeight: "bold"
+      }}
+    >
+      {value}
+    </span>
+  ),
+}));
+  // Create data source for Digital Inputs table
+  const disDataSource = [{
+    key: 'values',
+    ...dis.reduce((acc, di) => {
+      acc[di.key] = di.value === 1 ? "On" : "Off";
+      return acc;
+    }, {} as Record<string, string>)
+  }];
+
+// Create columns for Digital Inputs table
+const relayColumns = relays.map((di) => ({
+  title: di.key,
+  dataIndex: di.key,
+  key: di.key,
+  align: 'center' as const,
+  render: (value: string) => (
+    <span
+      style={{
+        backgroundColor: value === "On" ? "#52c41a" : "#ff4d4f",
+        color: "white",
+        padding: "4px 8px",
+        borderRadius: "4px",
+        fontWeight: "bold"
+      }}
+    >
+      {value}
+    </span>
+  ),
+}));
+  // Create data source for Digital Inputs table
+  const relaysDataSource = [{
+    key: 'values',
+    ...relays.reduce((acc, di) => {
+      acc[di.key] = di.value === 1 ? "On" : "Off";
+      return acc;
+    }, {} as Record<string, string>)
+  }];
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -239,6 +333,44 @@ const energyDataSource = Object.entries(energyData)
         </tbody>
       </table>
 
+
+      { relays.length > 0 && (
+        <>
+      <h2>Relays</h2>
+      <Table
+        columns={relayColumns}
+        dataSource={relaysDataSource}
+        pagination={false}
+        showHeader={true}
+        size="middle"
+        style={{ marginTop: 16 }}
+      /></>)}
+
+      { dis.length > 0 && (
+        <>
+      <h2>Digital Inputs</h2>
+      <Table
+        columns={disColumns}
+        dataSource={disDataSource}
+        pagination={false}
+        showHeader={true}
+        size="middle"
+        style={{ marginTop: 16 }}
+      /></>)}
+
+      <h2>Module Status</h2>
+      <table width={"100%"} style={{ textAlign: "center", marginTop: 16 }}>
+        <tr>
+          <td style={{ textAlign: "center" }}>Disk Fill</td> 
+          <td style={{ textAlign: "center" }}>Load</td>          
+          <td style={{ textAlign: "center" }}>Temperature</td>                    
+        </tr>
+        <tr>
+          <td style={{ textAlign: "center" }}><Progress  percent={energyData.diskfill} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td> 
+          <td style={{ textAlign: "center" }}><Progress  percent={energyData.load*100/4} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td>          
+          <td style={{ textAlign: "center" }}><Progress  format={(percent) => `${percent} °`} percent={energyData.temperature} steps={10} strokeColor={[green[6],green[6], green[6], green[6], green[6], green[6], red[5]]} /></td>          
+        </tr>
+      </table>
 
       <h2>Energy Data</h2>
       <Table
