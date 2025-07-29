@@ -366,9 +366,9 @@ const relayColumns = relays.map((di) => ({
           <td style={{ textAlign: "center" }}>Temperature</td>                    
         </tr>
         <tr>
-          <td style={{ textAlign: "center" }}><Progress  percent={energyData.diskfill} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td> 
-          <td style={{ textAlign: "center" }}><Progress  percent={energyData.load*100/4} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td>          
-          <td style={{ textAlign: "center" }}><Progress  format={(percent) => `${percent} °`} percent={energyData.temperature} steps={10} strokeColor={[green[6],green[6], green[6], green[6], green[6], green[6], red[5]]} /></td>          
+          <td style={{ textAlign: "center" }}><Progress  percent={parseFloat(''+energyData.diskfill)} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td> 
+          <td style={{ textAlign: "center" }}><Progress  percent={parseFloat(''+energyData.load)*100/4} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td>          
+          <td style={{ textAlign: "center" }}><Progress  format={(percent) => `${percent} °`} percent={parseFloat(''+energyData.temperature)} steps={10} strokeColor={[green[6],green[6], green[6], green[6], green[6], green[6], red[5]]} /></td>          
         </tr>
       </table>
 
