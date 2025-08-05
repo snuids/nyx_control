@@ -348,7 +348,7 @@ const relayColumns = relays.map((di) => ({
                   type="primary"
                   size="large"
                   onClick={() => startClick(trigger)}
-                  disabled={loading}
+                  disabled={loading || !alive}
                 >
                   Start
                 </Button>
@@ -358,7 +358,7 @@ const relayColumns = relays.map((di) => ({
                   danger
                   size="large"
                   onClick={() => stopClick(trigger)}
-                  disabled={loading}
+                  disabled={loading || !alive}
                 >
                   Stop
                 </Button>
