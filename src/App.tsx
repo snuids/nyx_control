@@ -1,6 +1,7 @@
 import { useState, useEffect,useCallback } from "react";
 import { Button,Table,Progress } from "antd";
 import { green, red,orange } from '@ant-design/colors';
+import { CheckCircleTwoTone,CloseCircleTwoTone } from '@ant-design/icons';
 import "./App.css";
 
 type Trigger = {
@@ -38,7 +39,10 @@ function App() {
   const [api, setApi] = useState("");
   const [siteId, setSiteId] = useState("marmar1");
   const [loading, setLoading] = useState(false);
-  const [energyData, setEnergyData] = useState<EnergyData>({}); 
+  const [energyData, setEnergyData] = useState<EnergyData>({});
+  const [timestamp, setTimestamp] = useState<Date | null>(null); 
+  const [timeDifference,setTimeDifference] = useState<string>("");
+  const [alive, setAlive] = useState<boolean>(false);
   const [config, setConfig] = useState<Config>({
     title: "Loading...",
     subtitle: "",
@@ -59,6 +63,30 @@ function App() {
       key: "value",
     },
   ];
+
+const getTimeDifference = (timestamp: Date | null): string => {
+    setAlive(false);
+    if (!timestamp) return "No data";
+    
+    const now = new Date();
+    const diffMs = now.getTime() - timestamp.getTime();
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSeconds < 60) {
+      setAlive(true);
+      return `${diffSeconds} second${diffSeconds !== 1 ? 's' : ''} ago`;
+    } else if (diffMinutes < 60) {
+      if (diffMinutes < 6) setAlive(true);
+      return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    } else {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    }
+  };
 
 const energyDataSource = Object.entries(energyData)
   .filter(([key]) => key !== "id" && key !== "type" && key.indexOf('pin') !== 0 && key.indexOf('di') !== 0)
@@ -123,6 +151,13 @@ const energyDataSource = Object.entries(energyData)
         return;
       }
       const data = await response.json();
+      // Store the @timestamp field as a Date object
+      if (data.data["_source"]["@timestamp"]) {
+        setTimestamp(new Date(data.data["_source"]["@timestamp"]));    
+        
+        setTimeDifference(getTimeDifference(timestamp));    
+      }
+
       //alert(`Last energy data: ${JSON.stringify(data.data["_source"])}`);
       const newdis=[]
       for(let i=0;i<8;i++)
@@ -174,7 +209,7 @@ const energyDataSource = Object.entries(energyData)
     } catch  {
       //alert(`Error: ${(error as Error).message}`);
     }
-  }, [api, token]);
+  }, [api, token,siteId, timestamp]);
 
   const sendMessage = async (trigger: Trigger, value: number) => {
     if (!api || !token) {
@@ -361,11 +396,26 @@ const relayColumns = relays.map((di) => ({
       <h2>Module Status</h2>
       <table width={"100%"} style={{ textAlign: "center", marginTop: 16 }}>
         <tr>
+          <td style={{ textAlign: "center",width:"25%" }}>Alive</td>
           <td style={{ textAlign: "center" }}>Disk Fill</td> 
           <td style={{ textAlign: "center" }}>Load</td>          
           <td style={{ textAlign: "center" }}>Temperature</td>                    
         </tr>
         <tr>
+          <td style={{ textAlign: "center" }}>
+            <>
+            {alive && <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <CheckCircleTwoTone title={timestamp?.toLocaleString()} twoToneColor="#52c41a" style={{fontSize:30}} />
+              <span style={{ fontSize: "0.7em", color: "#888" }}>
+                {timeDifference}</span>
+            </div>}
+            {!alive && <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <CloseCircleTwoTone title={timestamp?.toLocaleString()} twoToneColor="#ff4d4f" style={{fontSize:30}} />
+              <span style={{ fontSize: "0.7em", color: "#888" }}>
+                {timeDifference}</span>
+              </div>}
+            </>
+          </td>
           <td style={{ textAlign: "center" }}><Progress  percent={parseFloat(''+energyData.diskfill)} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td> 
           <td style={{ textAlign: "center" }}><Progress  percent={parseFloat(''+energyData.load)*100/4} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td>          
           <td style={{ textAlign: "center" }}><Progress  format={(percent) => `${percent} °`} percent={parseFloat(''+energyData.temperature)} steps={10} strokeColor={[green[6],green[6], green[6], green[6], green[6], green[6], red[5]]} /></td>          
