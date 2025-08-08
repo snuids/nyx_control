@@ -33,6 +33,8 @@ type Relay={
 }
 
 function App() {
+  const [received, setReceived] = useState<number>(0);
+  const [sent, setSent] = useState<number>(0);
   const [dis, setDis] = useState<Di[]>([]);
   const [relays, setRelays] = useState<Relay[]>([]);
   const [token, setToken] = useState("");
@@ -89,7 +91,7 @@ const getTimeDifference = (timestamp: Date | null): string => {
   };
 
 const energyDataSource = Object.entries(energyData)
-  .filter(([key]) => key !== "id" && key !== "type" && key.indexOf('pin') !== 0 && key.indexOf('di') !== 0)
+  .filter(([key]) => key !== "id" && key !== "type" && key.indexOf('pin') !== 0 && key.indexOf('di') !== 0  && key.indexOf('rx') !== 0  && key.indexOf('tx') !== 0  && key.indexOf('temperature') !== 0)
   .map(([key, value]) => {
     const displayKey =
       key === "pin0" ? "Relay 1"
@@ -156,6 +158,13 @@ const energyDataSource = Object.entries(energyData)
         setTimestamp(new Date(data.data["_source"]["@timestamp"]));    
         
         setTimeDifference(getTimeDifference(timestamp));    
+      }
+
+      if (data.data["_source"]["rx"]) {
+        setReceived(data.data["_source"]["rx"]);    
+      }
+      if (data.data["_source"]["tx"]) {
+        setSent(data.data["_source"]["tx"]);    
       }
 
       //alert(`Last energy data: ${JSON.stringify(data.data["_source"])}`);
@@ -328,7 +337,7 @@ const relayColumns = relays.map((di) => ({
     <>
       <h1>{config.title}</h1>
       <h2>{config.subtitle}</h2>
-      
+      {config.triggers.length > 0 && (
       <table style={{ width: "100%", textAlign: "left" }}>
         <thead>
           <tr>
@@ -366,7 +375,7 @@ const relayColumns = relays.map((di) => ({
             </tr>
           ))}
         </tbody>
-      </table>
+      </table>)}
 
 
       { relays.length > 0 && (
@@ -396,10 +405,9 @@ const relayColumns = relays.map((di) => ({
       <h2>Module Status</h2>
       <table width={"100%"} style={{ textAlign: "center", marginTop: 16 }}>
         <tr>
-          <td style={{ textAlign: "center",width:"25%" }}>Alive</td>
-          <td style={{ textAlign: "center" }}>Disk Fill</td> 
-          <td style={{ textAlign: "center" }}>Load</td>          
-          <td style={{ textAlign: "center" }}>Temperature</td>                    
+          <td style={{ textAlign: "center",width:"33%" }}>Alive</td>
+          <td style={{ textAlign: "center" }}>Messages Sent</td> 
+          <td style={{ textAlign: "center" }}>Messages Received</td>          
         </tr>
         <tr>
           <td style={{ textAlign: "center" }}>
@@ -416,6 +424,15 @@ const relayColumns = relays.map((di) => ({
               </div>}
             </>
           </td>
+          <td style={{ textAlign: "center",fontSize: "1.2em",fontWeight:"bolder" }}>{sent}</td> 
+          <td style={{ textAlign: "center",fontSize: "1.2em",fontWeight:"bolder"  }}>{received}</td>          
+        </tr>        
+        <tr>
+          <td style={{ textAlign: "center" }}>Disk Fill</td> 
+          <td style={{ textAlign: "center" }}>Load</td>          
+          <td style={{ textAlign: "center" }}>Temperature</td>                    
+        </tr>
+        <tr>
           <td style={{ textAlign: "center" }}><Progress  percent={parseFloat(''+energyData.diskfill)} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td> 
           <td style={{ textAlign: "center" }}><Progress  percent={parseFloat(''+energyData.load)*100/4} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td>          
           <td style={{ textAlign: "center" }}><Progress  format={(percent) => `${percent} °`} percent={parseFloat(''+energyData.temperature)} steps={10} strokeColor={[green[6],green[6], green[6], green[6], green[6], green[6], red[5]]} /></td>          
