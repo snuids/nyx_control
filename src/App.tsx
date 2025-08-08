@@ -111,6 +111,9 @@ const energyDataSource = Object.entries(energyData)
     } else if (typeof value === "number") {
       displayValue = value.toFixed(1);
     }
+    else if (typeof value === "object") {
+      displayValue = JSON.stringify(value, null, 2);
+    }
 
     return {
       key: displayKey,
