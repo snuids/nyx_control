@@ -1,5 +1,8 @@
+# Multi-platform build support for ARM64 and AMD64
+# Build with: docker buildx build --platform linux/amd64,linux/arm64 -t your-image-name .
+
 # Use an official Node.js runtime as a parent image
-FROM node:20-alpine AS build
+FROM --platform=$BUILDPLATFORM node:20-alpine AS build
 
 # Set the working directory
 WORKDIR /app
@@ -16,8 +19,8 @@ COPY . .
 # Build the React application
 RUN npm run build
 
-# Use an official Nginx image to serve the built application
-FROM nginx:alpine
+# Use an official Nginx image to serve the built application (multi-platform)
+FROM --platform=$TARGETPLATFORM nginx:alpine
 
 RUN mkdir -p /usr/share/nginx/html/controls
 

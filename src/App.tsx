@@ -3,6 +3,7 @@ import { Button,Table,Progress } from "antd";
 import { green, red,orange } from '@ant-design/colors';
 import { CheckCircleTwoTone,CloseCircleTwoTone } from '@ant-design/icons';
 import "./App.css";
+import { getLanguage, translate, type Lang } from "./i18n";
 
 type Trigger = {
   name: string;
@@ -46,21 +47,27 @@ function App() {
   const [timeDifference,setTimeDifference] = useState<string>("");
   const [alive, setAlive] = useState<boolean>(false);
   const [config, setConfig] = useState<Config>({
-    title: "Loading...",
+    title: "",
     subtitle: "",
     triggers: []
   });
+
+  const [language] = useState<Lang>(() => getLanguage());
+  const t = (key: string, params?: Record<string, string | number>) =>
+    translate(language, key, params);
+  const onLabel = t("on");
+  const offLabel = t("off");
 
   
 
     const energyColumns = [
     {
-      title: "Key",
+      title: t("key"),
       dataIndex: "key",
       key: "key",
     },
     {
-      title: "Value",
+      title: t("value"),
       dataIndex: "value",
       key: "value",
     },
@@ -68,7 +75,7 @@ function App() {
 
 const getTimeDifference = (timestamp: Date | null): string => {
     setAlive(false);
-    if (!timestamp) return "No data";
+    if (!timestamp) return t("no_data");
     
     const now = new Date();
     const diffMs = now.getTime() - timestamp.getTime();
@@ -79,14 +86,14 @@ const getTimeDifference = (timestamp: Date | null): string => {
 
     if (diffSeconds < 60) {
       setAlive(true);
-      return `${diffSeconds} second${diffSeconds !== 1 ? 's' : ''} ago`;
+      return t(diffSeconds === 1 ? "seconds_ago_one" : "seconds_ago_other", { n: diffSeconds });
     } else if (diffMinutes < 60) {
       if (diffMinutes < 6) setAlive(true);
-      return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+      return t(diffMinutes === 1 ? "minutes_ago_one" : "minutes_ago_other", { n: diffMinutes });
     } else if (diffHours < 24) {
-      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+      return t(diffHours === 1 ? "hours_ago_one" : "hours_ago_other", { n: diffHours });
     } else {
-      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+      return t(diffDays === 1 ? "days_ago_one" : "days_ago_other", { n: diffDays });
     }
   };
 
@@ -94,20 +101,20 @@ const energyDataSource = Object.entries(energyData)
   .filter(([key]) => key !== "id" && key !== "type" && key.indexOf('pin') !== 0 && key.indexOf('di') !== 0  && key.indexOf('rx') !== 0  && key.indexOf('tx') !== 0  && key.indexOf('temperature') !== 0)
   .map(([key, value]) => {
     const displayKey =
-      key === "pin0" ? "Relay 1"
-      : key === "pin1" ? "Relay 2"
-      : key === "pin2" ? "Relay 3"
-      : key === "pin3" ? "Relay 4"
-      : key === "pin4" ? "Relay 5"
-      : key === "pin5" ? "Relay 6"
-      : key === "pin6" ? "Relay 7"
-      : key === "pin7" ? "Relay 8"
+      key === "pin0" ? t("relay", { n: 1 })
+      : key === "pin1" ? t("relay", { n: 2 })
+      : key === "pin2" ? t("relay", { n: 3 })
+      : key === "pin3" ? t("relay", { n: 4 })
+      : key === "pin4" ? t("relay", { n: 5 })
+      : key === "pin5" ? t("relay", { n: 6 })
+      : key === "pin6" ? t("relay", { n: 7 })
+      : key === "pin7" ? t("relay", { n: 8 })
       : key;
 
     let displayValue = value;
     if (key.startsWith("pin")|| key.startsWith("di") ) {
-      if (value === 1) displayValue = "On";
-      else if (value === 0) displayValue = "Off";
+      if (value === 1) displayValue = onLabel;
+      else if (value === 0) displayValue = offLabel;
     } else if (typeof value === "number") {
       displayValue = value.toFixed(1);
     }
@@ -177,7 +184,7 @@ const energyDataSource = Object.entries(energyData)
         const key=`di${i}`;
         if(data.data["_source"][key]!==undefined)
         {
-          newdis.push({"key":`Input ${i+1}`, "value":data.data["_source"][key]});
+          newdis.push({"key": t("input", { n: i + 1 }), "value":data.data["_source"][key]});
         }
       }
       setDis(newdis);
@@ -188,7 +195,7 @@ const energyDataSource = Object.entries(energyData)
         const key=`pin${i}`;
         if(data.data["_source"][key]!==undefined)
         {
-          newrelays.push({"key":`Relay ${i+1}`, "value":data.data["_source"][key]});
+          newrelays.push({"key": t("relay", { n: i + 1 }), "value":data.data["_source"][key]});
         }
       }
       setRelays(newrelays);
@@ -225,7 +232,7 @@ const energyDataSource = Object.entries(energyData)
 
   const sendMessage = async (trigger: Trigger, value: number) => {
     if (!api || !token) {
-      alert("API endpoint or token is missing.");
+      alert(t("api_token_missing"));
       return;
     }
     try {
@@ -243,11 +250,11 @@ const energyDataSource = Object.entries(energyData)
         }),
       });
       if (!response.ok) {
-        alert("Failed to send message");
+        alert(t("failed_send"));
       }
       //alert(`Message sent for ${trigger.name}`);
     } catch (error) {
-      alert(`Error: ${(error as Error).message}`);
+      alert(t("error", { message: (error as Error).message }));
     }
   };
 
@@ -260,7 +267,7 @@ const disColumns = dis.map((di) => ({
   render: (value: string) => (
     <span
       style={{
-        backgroundColor: value === "On" ? "#52c41a" : "#ff4d4f",
+        backgroundColor: value === onLabel ? "#52c41a" : "#ff4d4f",
         color: "white",
         padding: "4px 8px",
         borderRadius: "4px",
@@ -275,7 +282,7 @@ const disColumns = dis.map((di) => ({
   const disDataSource = [{
     key: 'values',
     ...dis.reduce((acc, di) => {
-      acc[di.key] = di.value === 1 ? "On" : "Off";
+      acc[di.key] = di.value === 1 ? onLabel : offLabel;
       return acc;
     }, {} as Record<string, string>)
   }];
@@ -289,7 +296,7 @@ const relayColumns = relays.map((di) => ({
   render: (value: string) => (
     <span
       style={{
-        backgroundColor: value === "On" ? "#52c41a" : "#ff4d4f",
+        backgroundColor: value === onLabel ? "#52c41a" : "#ff4d4f",
         color: "white",
         padding: "4px 8px",
         borderRadius: "4px",
@@ -304,7 +311,7 @@ const relayColumns = relays.map((di) => ({
   const relaysDataSource = [{
     key: 'values',
     ...relays.reduce((acc, di) => {
-      acc[di.key] = di.value === 1 ? "On" : "Off";
+      acc[di.key] = di.value === 1 ? onLabel : offLabel;
       return acc;
     }, {} as Record<string, string>)
   }];
@@ -338,16 +345,16 @@ const relayColumns = relays.map((di) => ({
 
   return (
     <>
-      <h1>{config.title}</h1>
+      <h1>{config.title || t("loading")}</h1>
       <h2>{config.subtitle}</h2>
       {config.triggers.length > 0 && (
       <table style={{ width: "100%", textAlign: "left" }}>
         <thead>
           <tr>
-            <th style={{ textAlign: "left" }}>Name</th>
-            <th style={{ textAlign: "left" }}>Description</th>
-            <th style={{ textAlign: "left" }}>Start</th>
-            <th style={{ textAlign: "left" }}>Stop</th>
+            <th style={{ textAlign: "left" }}>{t("name")}</th>
+            <th style={{ textAlign: "left" }}>{t("description")}</th>
+            <th style={{ textAlign: "left" }}>{t("start")}</th>
+            <th style={{ textAlign: "left" }}>{t("stop")}</th>
           </tr>
         </thead>
         <tbody>
@@ -362,7 +369,7 @@ const relayColumns = relays.map((di) => ({
                   onClick={() => startClick(trigger)}
                   disabled={loading || !alive}
                 >
-                  Start
+                  {t("start")}
                 </Button>
               </td>
               <td style={{ textAlign: "left" }}>
@@ -372,7 +379,7 @@ const relayColumns = relays.map((di) => ({
                   onClick={() => stopClick(trigger)}
                   disabled={loading || !alive}
                 >
-                  Stop
+                  {t("stop")}
                 </Button>
               </td>
             </tr>
@@ -383,7 +390,7 @@ const relayColumns = relays.map((di) => ({
 
       { relays.length > 0 && (
         <>
-      <h2>Relays</h2>
+      <h2>{t("relays")}</h2>
       <Table
         columns={relayColumns}
         dataSource={relaysDataSource}
@@ -395,7 +402,7 @@ const relayColumns = relays.map((di) => ({
 
       { dis.length > 0 && (
         <>
-      <h2>Digital Inputs</h2>
+      <h2>{t("digital_inputs")}</h2>
       <Table
         columns={disColumns}
         dataSource={disDataSource}
@@ -405,12 +412,12 @@ const relayColumns = relays.map((di) => ({
         style={{ marginTop: 16 }}
       /></>)}
 
-      <h2>Module Status</h2>
+      <h2>{t("module_status")}</h2>
       <table width={"100%"} style={{ textAlign: "center", marginTop: 16 }}>
         <tr>
-          <td style={{ textAlign: "center",width:"33%" }}>Alive</td>
-          <td style={{ textAlign: "center" }}>Messages Sent</td> 
-          <td style={{ textAlign: "center" }}>Messages Received</td>          
+          <td style={{ textAlign: "center",width:"33%" }}>{t("alive")}</td>
+          <td style={{ textAlign: "center" }}>{t("messages_sent")}</td> 
+          <td style={{ textAlign: "center" }}>{t("messages_received")}</td>          
         </tr>
         <tr>
           <td style={{ textAlign: "center" }}>
@@ -431,9 +438,9 @@ const relayColumns = relays.map((di) => ({
           <td style={{ textAlign: "center",fontSize: "1.2em",fontWeight:"bolder"  }}>{received}</td>          
         </tr>        
         <tr>
-          <td style={{ textAlign: "center" }}>Disk Fill</td> 
-          <td style={{ textAlign: "center" }}>Load</td>          
-          <td style={{ textAlign: "center" }}>Temperature</td>                    
+          <td style={{ textAlign: "center" }}>{t("disk_fill")}</td> 
+          <td style={{ textAlign: "center" }}>{t("load")}</td>          
+          <td style={{ textAlign: "center" }}>{t("temperature")}</td>                    
         </tr>
         <tr>
           <td style={{ textAlign: "center" }}><Progress  percent={parseFloat(''+energyData.diskfill)} steps={10} strokeColor={[green[6],green[6], orange[6], red[5]]} /></td> 
@@ -442,7 +449,7 @@ const relayColumns = relays.map((di) => ({
         </tr>
       </table>
 
-      <h2>Energy Data</h2>
+      <h2>{t("energy_data")}</h2>
       <Table
         loading={energyDataSource.length === 0}
         rowKey="key"
